@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LogiTrack — Gestion Logistique</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & BASE ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0d0f14;
+  --bg2:       #13161d;
+  --bg3:       #1a1e28;
+  --surface:   #1f2433;
+  --border:    #2a3048;
+  --accent:    #e8ff47;
+  --accent2:   #47c4ff;
+  --accent3:   #ff6b47;
+  --text:      #e8eaf2;
+  --muted:     #6b7394;
+  --success:   #47ffb8;
+  --warning:   #ffb847;
+  --danger:    #ff4747;
+  --radius:    10px;
+  --sidebar-w: 240px;
+  --font-head: 'Syne', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+
+html { font-size: 14px; }
+body {
+  font-family: var(--font-mono);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── LOGIN ───────────────────────────────────────────────────── */
+#login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 80%, rgba(232,255,71,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 80% 20%, rgba(71,196,255,0.07) 0%, transparent 60%),
+    var(--bg);
+  position: relative;
+}
+
+.login-box {
+  width: 100%;
+  max-width: 400px;
+  padding: 0 20px;
+  animation: fadeUp .5s ease both;
+}
+
+.login-logo {
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 2.2rem;
+  letter-spacing: -1px;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.login-logo span { color: var(--accent); }
+.login-sub {
+  color: var(--muted);
+  font-size: 0.82rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 40px;
+}
+
+.login-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 36px;
+}
+
+.login-hint {
+  background: rgba(232,255,71,0.06);
+  border: 1px solid rgba(232,255,71,0.15);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 28px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.login-hint b { color: var(--accent); }
+
+.field { margin-bottom: 16px; }
+.field label {
+  display: block;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.field input {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color .2s;
+}
+.field input:focus { border-color: var(--accent); }
+
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  background: var(--accent);
+  color: #0d0f14;
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+  margin-top: 8px;
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(232,255,71,0.25); }
+.btn-primary:active { transform: translateY(0); }
+
+.login-error {
+  color: var(--danger);
+  font-size: 0.82rem;
+  margin-top: 12px;
+  text-align: center;
+  min-height: 20px;
+}
+
+/* ── APP SHELL ───────────────────────────────────────────────── */
+#app { display: none; }
+#app.visible { display: flex; min-height: 100vh; }
+
+/* ── SIDEBAR ─────────────────────────────────────────────────── */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+}
+
+.sidebar-brand {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-brand .brand-name {
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 1.3rem;
+  color: var(--text);
+}
+.sidebar-brand .brand-name span { color: var(--accent); }
+.sidebar-brand .brand-tag {
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.sidebar-user {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.user-avatar {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #0d0f14;
+  font-family: var(--font-head);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+.user-info .user-name { font-size: 0.85rem; font-weight: 500; color: var(--text); }
+.user-info .user-role {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 1px;
+}
+
+.sidebar-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+
+.nav-section-label {
+  padding: 10px 20px 4px;
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all .15s;
+  border-left: 2px solid transparent;
+  user-select: none;
+}
+.nav-item:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+.nav-item.active {
+  color: var(--accent);
+  border-left-color: var(--accent);
+  background: rgba(232,255,71,0.05);
+}
+.nav-item .nav-icon { font-size: 1rem; width: 20px; text-align: center; }
+
+.sidebar-bottom {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+}
+.btn-logout {
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all .2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+/* ── MAIN ────────────────────────────────────────────────────── */
+.main-content {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.topbar {
+  padding: 20px 32px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg2);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.page-title {
+  font-family: var(--font-head);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.page-subtitle { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+.topbar-actions { display: flex; gap: 10px; align-items: center; }
+
+.page-content { padding: 32px; flex: 1; }
+
+/* ── VIEWS ───────────────────────────────────────────────────── */
+.view { display: none; }
+.view.active { display: block; animation: fadeIn .25s ease; }
+
+/* ── DASHBOARD GRID ──────────────────────────────────────────── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: transform .2s, border-color .2s;
+}
+.stat-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--card-accent, var(--border));
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.stat-value {
+  font-family: var(--font-head);
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+}
+.stat-value.accent { color: var(--accent); }
+.stat-value.blue { color: var(--accent2); }
+.stat-value.orange { color: var(--warning); }
+.stat-value.danger { color: var(--danger); }
+.stat-value.success { color: var(--success); }
+
+.stat-icon {
+  position: absolute;
+  top: 16px; right: 16px;
+  font-size: 1.6rem;
+  opacity: 0.25;
+}
+
+/* ── SECTION ─────────────────────────────────────────────────── */
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.section-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.section-title {
+  font-family: var(--font-head);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: .5px;
+}
+.section-body { padding: 20px; }
+
+/* ── TABLE ───────────────────────────────────────────────────── */
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th {
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 0.7rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+.data-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(42,48,72,.5);
+  font-size: 0.85rem;
+  vertical-align: middle;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: rgba(255,255,255,.02); }
+.data-table td.mono { font-family: var(--font-mono); }
+
+/* ── BADGES ──────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: .5px;
+}
+.badge-planifie   { background: rgba(107,115,148,.15); color: var(--muted); }
+.badge-en_cours   { background: rgba(71,196,255,.15);  color: var(--accent2); }
+.badge-termine    { background: rgba(255,184,71,.15);  color: var(--warning); }
+.badge-valide     { background: rgba(71,255,184,.15);  color: var(--success); }
+.badge-disponible { background: rgba(71,255,184,.15);  color: var(--success); }
+.badge-indisponible { background: rgba(255,71,71,.15); color: var(--danger); }
+.badge-maintenance { background: rgba(255,184,71,.15); color: var(--warning); }
+.badge-direction  { background: rgba(232,255,71,.12);  color: var(--accent); }
+.badge-manager    { background: rgba(71,196,255,.12);  color: var(--accent2); }
+.badge-livreur    { background: rgba(71,255,184,.12);  color: var(--success); }
+.badge-rh         { background: rgba(255,107,71,.12);  color: var(--accent3); }
+.badge-flotte     { background: rgba(184,71,255,.12);  color: #b847ff; }
+.badge-prestataire { background: rgba(107,115,148,.15); color: var(--muted); }
+
+.dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* ── BUTTONS ─────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all .15s;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.btn-sm { padding: 5px 10px; font-size: 0.78rem; }
+.btn-accent { background: var(--accent); color: #0d0f14; font-weight: 600; }
+.btn-accent:hover { box-shadow: 0 4px 16px rgba(232,255,71,.25); }
+.btn-outline { background: transparent; border-color: var(--border); color: var(--text); }
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+.btn-danger { background: rgba(255,71,71,.1); border-color: rgba(255,71,71,.3); color: var(--danger); }
+.btn-danger:hover { background: rgba(255,71,71,.2); }
+.btn-success { background: rgba(71,255,184,.1); border-color: rgba(71,255,184,.3); color: var(--success); }
+.btn-success:hover { background: rgba(71,255,184,.2); }
+.btn-blue { background: rgba(71,196,255,.1); border-color: rgba(71,196,255,.3); color: var(--accent2); }
+.btn-blue:hover { background: rgba(71,196,255,.2); }
+
+/* ── MODAL ───────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.7);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  animation: fadeIn .2s ease;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  margin: 20px;
+  animation: slideUp .25s ease;
+}
+.modal-header {
+  padding: 24px 28px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-title {
+  font-family: var(--font-head);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.modal-close {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  transition: all .15s;
+}
+.modal-close:hover { border-color: var(--danger); color: var(--danger); }
+.modal-body { padding: 24px 28px; }
+.modal-footer {
+  padding: 16px 28px 24px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* ── FORM ────────────────────────────────────────────────────── */
+.form-group { margin-bottom: 16px; }
+.form-group label {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color .2s;
+}
+.form-group select option { background: var(--bg2); }
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus { border-color: var(--accent); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ── EMPTY STATE ─────────────────────────────────────────────── */
+.empty-state {
+  padding: 48px 20px;
+  text-align: center;
+  color: var(--muted);
+}
+.empty-state .empty-icon { font-size: 3rem; margin-bottom: 12px; opacity: .4; }
+.empty-state p { font-size: 0.88rem; }
+
+/* ── ALERT ───────────────────────────────────────────────────── */
+.alert {
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+  border: 1px solid;
+}
+.alert-info { background: rgba(71,196,255,.08); border-color: rgba(71,196,255,.25); color: var(--accent2); }
+.alert-warning { background: rgba(255,184,71,.08); border-color: rgba(255,184,71,.25); color: var(--warning); }
+.alert-success { background: rgba(71,255,184,.08); border-color: rgba(71,255,184,.25); color: var(--success); }
+.alert-danger { background: rgba(255,71,71,.08); border-color: rgba(255,71,71,.25); color: var(--danger); }
+
+/* ── LIVREUR VIEW ────────────────────────────────────────────── */
+.mission-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.mission-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 4px; height: 100%;
+  background: var(--card-color, var(--muted));
+}
+.mission-title {
+  font-family: var(--font-head);
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.mission-meta {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+.mission-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+.mission-detail-item { }
+.mission-detail-item .detail-label {
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.mission-detail-item .detail-value {
+  font-size: 0.95rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.action-bar {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+/* ── LOADING ─────────────────────────────────────────────────── */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  color: var(--muted);
+  gap: 12px;
+}
+.spinner {
+  width: 20px; height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+}
+
+/* ── ANIMATIONS ──────────────────────────────────────────────── */
+@keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+@keyframes fadeUp { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:translateY(0) } }
+@keyframes slideUp { from { opacity:0; transform:translateY(30px) } to { opacity:1; transform:translateY(0) } }
+@keyframes spin { to { transform:rotate(360deg) } }
+
+/* ── FILTER BAR ──────────────────────────────────────────────── */
+.filter-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.filter-bar input,
+.filter-bar select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  outline: none;
+  transition: border-color .2s;
+}
+.filter-bar input:focus,
+.filter-bar select:focus { border-color: var(--accent); }
+
+/* ── VEHICLE GRID ────────────────────────────────────────────── */
+.vehicle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+.vehicle-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: transform .2s, border-color .2s;
+}
+.vehicle-card:hover { transform: translateY(-2px); border-color: var(--accent2); }
+.vehicle-plate {
+  font-family: var(--font-head);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+.vehicle-info { font-size: 0.82rem; color: var(--muted); margin-bottom: 14px; }
+.vehicle-attrs { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+.vehicle-expiry {
+  display: flex;
+  gap: 8px;
+  font-size: 0.75rem;
+  flex-wrap: wrap;
+}
+.expiry-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+}
+.expiry-item.warning { color: var(--warning); }
+.expiry-item.danger { color: var(--danger); }
+
+/* ── SCROLLBAR ───────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── NOTIFICATION ────────────────────────────────────────────── */
+#notif {
+  position: fixed;
+  top: 20px; right: 20px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.notif-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  font-size: 0.84rem;
+  max-width: 300px;
+  animation: slideIn .3s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.notif-item.success { border-left: 3px solid var(--success); }
+.notif-item.error { border-left: 3px solid var(--danger); }
+@keyframes slideIn { from { transform: translateX(100%); opacity:0 } to { transform: translateX(0); opacity:1 } }
+
+/* ── DASHBOARD TWO COL ───────────────────────────────────────── */
+.dash-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+@media (max-width: 900px) { .dash-grid { grid-template-columns: 1fr; } }
+
+.progress-bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width .4s ease;
+}
+
+/* ── TOOLTIP ─────────────────────────────────────────────────── */
+[data-tip] { position: relative; }
+[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  color: var(--text);
+  z-index: 99;
+}
+</style>
+</head>
+<body>
+
+<!-- NOTIFICATIONS -->
+<div id="notif"></div>
+
+<!-- ──────────────────────── LOGIN ──────────────────────────── -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">Logi<span>Track</span></div>
+    <div class="login-sub">Gestion Logistique · v1.0</div>
+    <div class="login-card">
+      <div class="login-hint">
+        <b>Comptes démo :</b><br>
+        direction@demo.com / manager@demo.com<br>
+        livreur1@demo.com / rh@demo.com / flotte@demo.com<br>
+        Mot de passe : <b>demo123</b>
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="votre@email.com" value="manager@demo.com">
+      </div>
+      <div class="field">
+        <label>Mot de passe</label>
+        <input type="password" id="login-pass" placeholder="••••••••" value="demo123">
+      </div>
+      <button class="btn-primary" onclick="doLogin()">Connexion</button>
+      <div class="login-error" id="login-err"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ──────────────────────── APP ──────────────────────────────── -->
+<div id="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-name">Logi<span>Track</span></div>
+      <div class="brand-tag">Gestion Logistique</div>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <div class="user-info">
+        <div class="user-name" id="user-name">—</div>
+        <div class="user-role" id="user-role-label">—</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav" id="sidebar-nav">
+      <!-- Generated dynamically based on role -->
+    </nav>
+    <div class="sidebar-bottom">
+      <button class="btn-logout" onclick="doLogout()">⏻ Déconnexion</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+    <div class="topbar">
+      <div>
+        <div class="page-title" id="page-title">Dashboard</div>
+        <div class="page-subtitle" id="page-date"></div>
+      </div>
+      <div class="topbar-actions" id="topbar-actions"></div>
+    </div>
+    <div class="page-content">
+
+      <!-- ── DASHBOARD ── -->
+      <div class="view active" id="view-dashboard">
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="dash-grid">
+          <div>
+            <div class="section">
+              <div class="section-header">
+                <div class="section-title">📋 Planning du jour</div>
+                <div id="dash-date-badge" style="font-size:.78rem;color:var(--muted)"></div>
+              </div>
+              <div class="section-body" id="dash-planning-list"></div>
+            </div>
+          </div>
+          <div>
+            <div class="section">
+              <div class="section-header">
+                <div class="section-title">⚡ Alertes</div>
+              </div>
+              <div class="section-body" id="dash-alerts"></div>
+            </div>
+            <div class="section" style="margin-top:20px">
+              <div class="section-header">
+                <div class="section-title">🚗 Flotte</div>
+              </div>
+              <div class="section-body" id="dash-fleet"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PLANNING ── -->
+      <div class="view" id="view-planning">
+        <div class="filter-bar">
+          <input type="date" id="plan-date-filter" onchange="loadPlanning()">
+          <select id="plan-status-filter" onchange="loadPlanning()">
+            <option value="">Tous statuts</option>
+            <option value="planifie">Planifié</option>
+            <option value="en_cours">En cours</option>
+            <option value="termine">Terminé</option>
+            <option value="valide">Validé</option>
+          </select>
+        </div>
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">📅 Plannings</div>
+            <button class="btn btn-accent btn-sm" id="btn-add-planning" onclick="openAddPlanning()">+ Nouveau</button>
+          </div>
+          <div id="planning-table-wrap"></div>
+        </div>
+      </div>
+
+      <!-- ── MA JOURNÉE (LIVREUR) ── -->
+      <div class="view" id="view-journee">
+        <div id="journee-content"></div>
+      </div>
+
+      <!-- ── LIVREURS ── -->
+      <div class="view" id="view-livreurs">
+        <div class="filter-bar">
+          <input type="text" id="livreur-search" placeholder="Rechercher..." oninput="renderUsersTable()">
+          <select id="livreur-role-filter" onchange="renderUsersTable()">
+            <option value="">Tous rôles</option>
+            <option value="livreur">Livreur</option>
+            <option value="manager">Manager</option>
+            <option value="direction">Direction</option>
+            <option value="rh">RH</option>
+            <option value="flotte">Flotte</option>
+          </select>
+        </div>
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">👥 Utilisateurs</div>
+            <button class="btn btn-accent btn-sm" onclick="openAddUser()">+ Ajouter</button>
+          </div>
+          <div id="users-table-wrap"></div>
+        </div>
+      </div>
+
+      <!-- ── VÉHICULES ── -->
+      <div class="view" id="view-vehicles">
+        <div class="filter-bar">
+          <select id="veh-status-filter" onchange="renderVehiclesGrid()">
+            <option value="">Tous statuts</option>
+            <option value="disponible">Disponible</option>
+            <option value="maintenance">En maintenance</option>
+            <option value="indisponible">Indisponible</option>
+          </select>
+        </div>
+        <div id="vehicles-grid"></div>
+      </div>
+
+      <!-- ── TOURNÉES ── -->
+      <div class="view" id="view-tours">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">🗺️ Tournées</div>
+            <button class="btn btn-accent btn-sm" onclick="openAddTour()">+ Créer</button>
+          </div>
+          <div id="tours-table-wrap"></div>
+        </div>
+      </div>
+
+      <!-- ── INCIDENTS ── -->
+      <div class="view" id="view-incidents">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">⚠️ Incidents signalés</div>
+          </div>
+          <div id="incidents-table-wrap"></div>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </main>
+</div><!-- /app -->
+
+<!-- ──────────────────────── MODALS ────────────────────────────── -->
+
+<!-- Add Planning -->
+<div class="modal-overlay" id="modal-planning">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Nouveau planning</div>
+      <button class="modal-close" onclick="closeModal('modal-planning')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="p-date">
+      </div>
+      <div class="form-group">
+        <label>Livreur</label>
+        <select id="p-driver"><option value="">Choisir...</option></select>
+      </div>
+      <div class="form-group">
+        <label>Tournée</label>
+        <select id="p-tour"><option value="">Choisir...</option></select>
+      </div>
+      <div class="form-group">
+        <label>Véhicule</label>
+        <select id="p-vehicle"><option value="">Choisir...</option></select>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea id="p-notes" rows="2" placeholder="Optionnel..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-planning')">Annuler</button>
+      <button class="btn btn-accent" onclick="savePlanning()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add User -->
+<div class="modal-overlay" id="modal-user">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Nouvel utilisateur</div>
+      <button class="modal-close" onclick="closeModal('modal-user')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nom complet</label>
+          <input type="text" id="u-name" placeholder="Jean Dupont">
+        </div>
+        <div class="form-group">
+          <label>Téléphone</label>
+          <input type="tel" id="u-phone" placeholder="06...">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="u-email" placeholder="email@exemple.com">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Mot de passe</label>
+          <input type="password" id="u-pass" placeholder="••••••••">
+        </div>
+        <div class="form-group">
+          <label>Rôle</label>
+          <select id="u-role">
+            <option value="livreur">Livreur</option>
+            <option value="manager">Manager</option>
+            <option value="direction">Direction</option>
+            <option value="rh">RH</option>
+            <option value="flotte">Flotte</option>
+            <option value="prestataire">Prestataire</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-user')">Annuler</button>
+      <button class="btn btn-accent" onclick="saveUser()">Créer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Vehicle -->
+<div class="modal-overlay" id="modal-vehicle">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Nouveau véhicule</div>
+      <button class="modal-close" onclick="closeModal('modal-vehicle')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Immatriculation</label>
+          <input type="text" id="v-plate" placeholder="AB-123-CD">
+        </div>
+        <div class="form-group">
+          <label>Type</label>
+          <select id="v-type">
+            <option value="camionnette">Camionnette</option>
+            <option value="fourgon">Fourgon</option>
+            <option value="poids_lourd">Poids lourd</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Marque</label>
+          <input type="text" id="v-brand" placeholder="Renault">
+        </div>
+        <div class="form-group">
+          <label>Modèle</label>
+          <input type="text" id="v-model" placeholder="Master">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Exp. assurance</label>
+          <input type="date" id="v-insurance">
+        </div>
+        <div class="form-group">
+          <label>Exp. contrôle technique</label>
+          <input type="date" id="v-ct">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Kilométrage</label>
+        <input type="number" id="v-km" placeholder="0">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-vehicle')">Annuler</button>
+      <button class="btn btn-accent" onclick="saveVehicle()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Tour -->
+<div class="modal-overlay" id="modal-tour">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Nouvelle tournée</div>
+      <button class="modal-close" onclick="closeModal('modal-tour')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nom</label>
+          <input type="text" id="t-name" placeholder="Tournée Nord">
+        </div>
+        <div class="form-group">
+          <label>Client</label>
+          <input type="text" id="t-client" placeholder="Nom client">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Zone</label>
+          <input type="text" id="t-zone" placeholder="Zone Nord">
+        </div>
+        <div class="form-group">
+          <label>Nb. arrêts</label>
+          <input type="number" id="t-stops" placeholder="10">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="t-desc" rows="2" placeholder="Zones couvertes..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-tour')">Annuler</button>
+      <button class="btn btn-accent" onclick="saveTour()">Créer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Incident Modal -->
+<div class="modal-overlay" id="modal-incident">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">⚠️ Signaler un incident</div>
+      <button class="modal-close" onclick="closeModal('modal-incident')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="inc-planning-id">
+      <div class="form-group">
+        <label>Type</label>
+        <select id="inc-type">
+          <option value="vehicule">Problème véhicule</option>
+          <option value="livraison">Problème livraison</option>
+          <option value="accident">Accident</option>
+          <option value="retard">Retard important</option>
+          <option value="autre">Autre</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="inc-desc" rows="4" placeholder="Décrivez l'incident..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-incident')">Annuler</button>
+      <button class="btn btn-danger" onclick="saveIncident()">Signaler</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────
+const API = 'http://localhost:8000';
+let currentUser = null;
+let token = null;
+let state = { users: [], vehicles: [], tours: [], plannings: [], incidents: [] };
+
+// ─── HELPERS ──────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const today = () => new Date().toISOString().split('T')[0];
+const fmt = d => d ? new Date(d).toLocaleDateString('fr-FR') : '—';
+const fmtRole = r => ({direction:'Direction', manager:'Manager', livreur:'Livreur', rh:'RH', flotte:'Flotte', prestataire:'Prestataire'}[r] || r);
+
+async function api(method, path, body) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API + path, opts);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Erreur réseau');
+  }
+  return res.json();
+}
+
+function notify(msg, type = 'success') {
+  const n = document.createElement('div');
+  n.className = `notif-item ${type}`;
+  n.innerHTML = `<span>${type === 'success' ? '✓' : '✕'}</span> ${msg}`;
+  $('notif').appendChild(n);
+  setTimeout(() => n.remove(), 3500);
+}
+
+function badge(status) {
+  const labels = { planifie:'Planifié', en_cours:'En cours', termine:'Terminé', valide:'Validé',
+    disponible:'Disponible', maintenance:'Maintenance', indisponible:'Indisponible' };
+  return `<span class="badge badge-${status}"><span class="dot"></span>${labels[status]||status}</span>`;
+}
+
+function openModal(id) { $(id).classList.add('open'); }
+function closeModal(id) { $(id).classList.remove('open'); }
+
+// ─── AUTH ──────────────────────────────────────────────────────────
+async function doLogin() {
+  $('login-err').textContent = '';
+  try {
+    const res = await api('POST', '/auth/login', {
+      email: $('login-email').value.trim(),
+      password: $('login-pass').value
+    });
+    token = res.token;
+    currentUser = res.user;
+    localStorage.setItem('lt_token', token);
+    localStorage.setItem('lt_user', JSON.stringify(currentUser));
+    startApp();
+  } catch(e) {
+    $('login-err').textContent = e.message;
+  }
+}
+
+async function doLogout() {
+  try { await api('POST', '/auth/logout'); } catch {}
+  token = null; currentUser = null;
+  localStorage.removeItem('lt_token');
+  localStorage.removeItem('lt_user');
+  $('app').classList.remove('visible');
+  $('login-screen').style.display = 'flex';
+}
+
+$('login-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+// Try auto-login
+const savedToken = localStorage.getItem('lt_token');
+const savedUser  = localStorage.getItem('lt_user');
+if (savedToken && savedUser) {
+  token = savedToken;
+  currentUser = JSON.parse(savedUser);
+  startApp();
+}
+
+// ─── APP START ─────────────────────────────────────────────────────
+async function startApp() {
+  $('login-screen').style.display = 'none';
+  $('app').classList.add('visible');
+
+  // Update UI
+  $('user-name').textContent = currentUser.name;
+  $('user-role-label').textContent = fmtRole(currentUser.role);
+  $('user-avatar').textContent = currentUser.name.charAt(0).toUpperCase();
+  $('page-date').textContent = new Date().toLocaleDateString('fr-FR', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  buildNav();
+  await loadAllData();
+  navigateTo('dashboard');
+}
+
+// ─── NAVIGATION ────────────────────────────────────────────────────
+const navConfig = {
+  direction:   ['dashboard','planning','livreurs','vehicles','tours','incidents'],
+  manager:     ['dashboard','planning','livreurs','vehicles','tours','incidents'],
+  livreur:     ['journee','incidents'],
+  rh:          ['livreurs'],
+  flotte:      ['vehicles'],
+  prestataire: ['dashboard','livreurs'],
+};
+
+const navItems = {
+  dashboard: { label: 'Dashboard', icon: '⬛' },
+  planning:  { label: 'Planning', icon: '📅' },
+  journee:   { label: 'Ma journée', icon: '🚚' },
+  livreurs:  { label: 'Utilisateurs', icon: '👥' },
+  vehicles:  { label: 'Véhicules', icon: '🚗' },
+  tours:     { label: 'Tournées', icon: '🗺️' },
+  incidents: { label: 'Incidents', icon: '⚠️' },
+};
+
+function buildNav() {
+  const nav = $('sidebar-nav');
+  const allowed = navConfig[currentUser.role] || [];
+  nav.innerHTML = '';
+  allowed.forEach(key => {
+    const item = navItems[key];
+    const el = document.createElement('div');
+    el.className = 'nav-item';
+    el.id = `nav-${key}`;
+    el.innerHTML = `<span class="nav-icon">${item.icon}</span> ${item.label}`;
+    el.onclick = () => navigateTo(key);
+    nav.appendChild(el);
+  });
+}
+
+function navigateTo(view) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const el = $(`view-${view}`);
+  if (el) el.classList.add('active');
+  const navEl = $(`nav-${view}`);
+  if (navEl) navEl.classList.add('active');
+  const titles = { dashboard:'Dashboard', planning:'Planning', journee:'Ma journée',
+    livreurs:'Utilisateurs', vehicles:'Véhicules', tours:'Tournées', incidents:'Incidents' };
+  $('page-title').textContent = titles[view] || view;
+  if (view === 'dashboard') renderDashboard();
+  if (view === 'planning') loadPlanning();
+  if (view === 'livreurs') renderUsersTable();
+  if (view === 'vehicles') renderVehiclesGrid();
+  if (view === 'tours') renderToursTable();
+  if (view === 'incidents') renderIncidents();
+  if (view === 'journee') renderJournee();
+  // Show add button only for managers on certain views
+  const addBtn = $('btn-add-planning');
+  if (addBtn) addBtn.style.display = ['direction','manager'].includes(currentUser.role) ? '' : 'none';
+}
+
+// ─── DATA LOADING ──────────────────────────────────────────────────
+async function loadAllData() {
+  try {
+    const [users, vehicles, tours, plannings, incidents] = await Promise.all([
+      api('GET', '/users'),
+      api('GET', '/vehicles'),
+      api('GET', '/tours'),
+      api('GET', '/plannings'),
+      api('GET', '/incidents'),
+    ]);
+    state.users = users;
+    state.vehicles = vehicles;
+    state.tours = tours;
+    state.plannings = plannings;
+    state.incidents = incidents;
+  } catch(e) {
+    notify('Erreur de chargement des données', 'error');
+  }
+}
+
+// ─── DASHBOARD ─────────────────────────────────────────────────────
+async function renderDashboard() {
+  try {
+    const data = await api('GET', '/dashboard');
+    const s = data.stats;
+
+    $('dash-date-badge').textContent = new Date().toLocaleDateString('fr-FR');
+
+    // Stats
+    const grid = $('stats-grid');
+    const cards = [
+      { label: 'Livreurs actifs', value: s.total_drivers, cls: '', icon: '👥', accent: '--accent2' },
+      { label: 'Planning aujourd\'hui', value: s.today_plannings, cls: '', icon: '📅', accent: '--accent' },
+      { label: 'En mission', value: s.in_progress, cls: 'blue', icon: '🚚', accent: '--accent2' },
+      { label: 'À valider', value: s.pending_validation, cls: 'orange', icon: '⏳', accent: '--warning' },
+      { label: 'Validés', value: s.validated_today, cls: 'success', icon: '✅', accent: '--success' },
+      { label: 'Véhicules dispo', value: s.available_vehicles, cls: 'success', icon: '🚗', accent: '--success' },
+      { label: 'En maintenance', value: s.maintenance_vehicles, cls: s.maintenance_vehicles > 0 ? 'orange' : '', icon: '🔧', accent: '--warning' },
+      { label: 'Incidents total', value: s.total_incidents, cls: s.total_incidents > 0 ? 'danger' : '', icon: '⚠️', accent: '--accent3' },
+    ];
+    grid.innerHTML = cards.map(c => `
+      <div class="stat-card" style="--card-accent: var(${c.accent})">
+        <div class="stat-label">${c.label}</div>
+        <div class="stat-value ${c.cls}">${c.value}</div>
+        <div class="stat-icon">${c.icon}</div>
+      </div>
+    `).join('');
+
+    // Planning list
+    const planList = $('dash-planning-list');
+    if (!data.today_plannings.length) {
+      planList.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><p>Aucun planning pour aujourd\'hui</p></div>';
+    } else {
+      planList.innerHTML = `<table class="data-table">
+        <thead><tr><th>Livreur</th><th>Tournée</th><th>Véhicule</th><th>Statut</th><th>Actions</th></tr></thead>
+        <tbody>${data.today_plannings.map(p => `
+          <tr>
+            <td>${p.driver_name||'—'}</td>
+            <td>${p.tour_name||'—'}</td>
+            <td class="mono">${p.plate||'—'}</td>
+            <td>${badge(p.status)}</td>
+            <td>${p.status==='termine' && ['manager','direction'].includes(currentUser.role) ?
+              `<button class="btn btn-success btn-sm" onclick="validatePlanning(${p.id})">✓ Valider</button>` : ''
+            }</td>
+          </tr>
+        `).join('')}</tbody>
+      </table>`;
+    }
+
+    // Alerts
+    const alerts = $('dash-alerts');
+    const alertList = [];
+    if (s.pending_validation > 0) alertList.push(`<div class="alert alert-warning">⏳ ${s.pending_validation} tournée(s) en attente de validation</div>`);
+    if (s.maintenance_vehicles > 0) alertList.push(`<div class="alert alert-warning">🔧 ${s.maintenance_vehicles} véhicule(s) en maintenance</div>`);
+    if (s.total_incidents > 0) alertList.push(`<div class="alert alert-danger">⚠️ ${s.total_incidents} incident(s) signalé(s)</div>`);
+    if (!alertList.length) alertList.push(`<div class="alert alert-success">✓ Aucune alerte active</div>`);
+    alerts.innerHTML = alertList.join('');
+
+    // Fleet mini
+    const fleet = $('dash-fleet');
+    const vehStats = { disponible:0, maintenance:0, indisponible:0 };
+    state.vehicles.forEach(v => { if(vehStats[v.status]!==undefined) vehStats[v.status]++; });
+    const total = state.vehicles.length || 1;
+    fleet.innerHTML = `
+      ${Object.entries(vehStats).map(([k,v]) => `
+        <div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:.8rem;color:var(--muted)">${{disponible:'Disponibles',maintenance:'Maintenance',indisponible:'Indisponibles'}[k]}</span>
+            <span style="font-size:.8rem">${v}/${state.vehicles.length}</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:${(v/total*100)}%;background:var(${k==='disponible'?'--success':k==='maintenance'?'--warning':'--danger'})"></div>
+          </div>
+        </div>
+      `).join('')}
+    `;
+  } catch(e) {
+    notify('Erreur dashboard: ' + e.message, 'error');
+  }
+}
+
+// ─── PLANNING ──────────────────────────────────────────────────────
+async function loadPlanning() {
+  const dateVal = $('plan-date-filter').value || today();
+  const statusVal = $('plan-status-filter').value;
+
+  let url = `/plannings?date_filter=${dateVal}`;
+  if (statusVal) url += `&status=${statusVal}`;
+
+  try {
+    let plannings = await api('GET', url);
+    if (statusVal) plannings = plannings.filter(p => p.status === statusVal);
+    state.plannings = plannings;
+    renderPlanningTable(plannings);
+  } catch(e) {
+    notify(e.message, 'error');
+  }
+}
+
+function renderPlanningTable(plannings) {
+  const wrap = $('planning-table-wrap');
+  if (!plannings.length) {
+    wrap.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><p>Aucun planning pour cette date</p></div>';
+    return;
+  }
+  const isManager = ['manager','direction'].includes(currentUser.role);
+  wrap.innerHTML = `<table class="data-table">
+    <thead><tr>
+      <th>Livreur</th><th>Tournée</th><th>Client</th><th>Véhicule</th>
+      <th>Départ</th><th>Retour</th><th>Statut</th><th>Actions</th>
+    </tr></thead>
+    <tbody>${plannings.map(p => `
+      <tr>
+        <td>${p.driver_name||'—'}<br><small style="color:var(--muted)">${p.driver_phone||''}</small></td>
+        <td>${p.tour_name||'—'}<br><small style="color:var(--muted)">${p.zone||''}</small></td>
+        <td>${p.client||'—'}</td>
+        <td class="mono">${p.plate||'—'}<br><small style="color:var(--muted)">${p.brand||''} ${p.model||''}</small></td>
+        <td class="mono">${p.start_time||'—'}</td>
+        <td class="mono">${p.end_time||'—'}</td>
+        <td>${badge(p.status)}</td>
+        <td style="display:flex;gap:6px;flex-wrap:wrap">
+          ${p.status==='termine' && isManager ? `<button class="btn btn-success btn-sm" onclick="validatePlanning(${p.id})">✓ Valider</button>` : ''}
+          ${isManager && p.status!=='valide' ? `<button class="btn btn-danger btn-sm" onclick="deletePlanning(${p.id})">✕</button>` : ''}
+        </td>
+      </tr>
+    `).join('')}</tbody>
+  </table>`;
+}
+
+async function openAddPlanning() {
+  // Populate selects
+  const drivers = state.users.filter(u => u.role === 'livreur' && u.active);
+  $('p-driver').innerHTML = '<option value="">Choisir...</option>' + drivers.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+  $('p-tour').innerHTML = '<option value="">Choisir...</option>' + state.tours.map(t => `<option value="${t.id}">${t.name} — ${t.client||''}</option>`).join('');
+  const availVeh = state.vehicles.filter(v => v.status === 'disponible');
+  $('p-vehicle').innerHTML = '<option value="">Choisir...</option>' + availVeh.map(v => `<option value="${v.id}">${v.plate} — ${v.brand||''} ${v.model||''}</option>`).join('');
+  $('p-date').value = today();
+  $('p-notes').value = '';
+  openModal('modal-planning');
+}
+
+async function savePlanning() {
+  try {
+    await api('POST', '/plannings', {
+      date: $('p-date').value,
+      driver_id: parseInt($('p-driver').value),
+      tour_id: parseInt($('p-tour').value),
+      vehicle_id: parseInt($('p-vehicle').value),
+      notes: $('p-notes').value
+    });
+    closeModal('modal-planning');
+    notify('Planning créé !');
+    await loadAllData();
+    loadPlanning();
+  } catch(e) { notify(e.message, 'error'); }
+}
+
+async function validatePlanning(id) {
+  try {
+    await api('PATCH', `/plannings/${id}`, { status: 'valide' });
+    notify('Tournée validée !');
+    await loadAllData();
+    renderDashboard();
+    loadPlanning();
+  } catch(e) { notify(e.message, 'error'); }
+}
+
+async function deletePlanning(id) {
+  if (!confirm('Supprimer ce planning ?')) return;
+  try {
+    await api('DELETE', `/plannings/${id}`);
+    notify('Planning supprimé');
+    await loadAllData();
+    loadPlanning();
+  } catch(e) { notify(e.message, 'error'); }
+}
+
+// ─── JOURNÉE LIVREUR ───────────────────────────────────────────────
+async function renderJournee() {
+  const wrap = $('journee-content');
+  wrap.innerHTML = '<div class="loading"><div class="spinner"></div> Chargement...</div>';
+
+  try {
+    const todayPlannings = await api('GET', `/plannings?date_filter=${today()}`);
+    const mine = todayPlannings.filter(p => p.driver_id === currentUser.id);
+
+    if (!mine.length) {
+      wrap.innerHTML = `
+        <div class="mission-card" style="--card-color:var(--muted)">
+          <div class="mission-title">Aucune mission aujourd'hui</div>
+          <div class="mission-meta">${new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</div>
+          <p style="color:var(--muted);font-size:.88rem">Vous n'avez pas de tournée assignée pour aujourd'hui. Contactez votre manager si nécessaire.</p>
+        </div>`;
+      return;
+    }
+
+    wrap.innerHTML = mine.map(p => {
+      const colors = { planifie:'var(--muted)', en_cours:'var(--accent2)', termine:'var(--warning)', valide:'var(--success)' };
+      return `
+      <div class="mission-card" style="--card-color:${colors[p.status]||'var(--muted)'}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">
+          <div class="mission-title">${p.tour_name||'Tournée'}</div>
+          ${badge(p.status)}
+        </div>
+        <div class="mission-meta">${new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})} · ${p.client||'—'}</div>
+        <div class="mission-details">
+          <div class="mission-detail-item">
+            <div class="detail-label">Véhicule</div>
+            <div class="detail-value">🚗 ${p.plate||'—'}</div>
+          </div>
+          <div class="mission-detail-item">
+            <div class="detail-label">Zone</div>
+            <div class="detail-value">📍 ${p.zone||'—'}</div>
+          </div>
+          <div class="mission-detail-item">
+            <div class="detail-label">Arrêts prévus</div>
+            <div class="detail-value">📦 ${p.stops||'—'}</div>
+          </div>
+          <div class="mission-detail-item">
+            <div class="detail-label">Départ</div>
+            <div class="detail-value">⏰ ${p.start_time||'Non démarré'}</div>
+          </div>
+          <div class="mission-detail-item">
+            <div class="detail-label">Retour</div>
+            <div class="detail-value">🏁 ${p.end_time||'—'}</div>
+          </div>
+        </div>
+        <div class="action-bar">
+          ${p.status === 'planifie' ? `<button class="btn btn-accent" onclick="startMission(${p.id})">▶ Démarrer ma journée</button>` : ''}
+          ${p.status === 'en_cours' ? `<button class="btn btn-success" onclick="endMission(${p.id})">■ Terminer ma journée</button>` : ''}
+          ${['en_cours','planifie'].includes(p.status) ? `<button class="btn btn-danger btn-outline" onclick="reportIncident(${p.id})">⚠ Signaler incident</button>` : ''}
+          ${p.status === 'valide' ? `<div class="alert alert-success" style="margin:0">✓ Tournée validée par votre manager</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    wrap.innerHTML = `<div class="alert alert-danger">${e.message}</div>`;
+  }
+}
+
+async function startMission(id) {
+  const now = new Date().toTimeString().slice(0,5);
+  try {
+    await api('PATCH', `/plannings/${id}`, { status: 'en_cours', start_time: now });
+    notify('Mission démarrée ! Bonne journée 🚚');
+    renderJournee();
+  } catch(e) { notify(e.message, 'error'); }
+}
+
+async function endMission(id) {
+  const now = new Date().toTimeString().slice(0,5);
+  try {
+    await api('PATCH', `/plannings/${id}`, { status: 'termine', end_time: now });
+    notify('Journée terminée ! Bon retour 👋');
+    renderJournee();
+  } catch(e) { notify(e.message, 'error'); }
+}
+
+function reportIncident(planningId) {
+  $('inc-planning-id').value = planningId;
+  $('inc-type').value = 'vehicule';
+  $('inc-desc').value = '';
+  openModal('modal-incident');
+}
+
+async function saveIncident() {
+  try {
+    await api('POST', '/incidents', {
+      planning_id: parseInt($('inc-planning-id').value),
+      type: $('inc-type').value,
+      description: $('inc-desc').value
+    });
+    closeModal('modal-incident');
+    notify('Incident signalé', 'success');
+  } catch(e) { notify(e.message, 'error'); }
+}
+
+// ─── USERS ────────────────────────────────────────────────────────
+function renderUsersTable() {
+  const search = ($('livreur-search')?.value||'').toLowerCase();
+  const roleF = $('livreur-role-filter')?.value||'';
+  let users = state.users.filter(u => {
+    if (roleF && u.role !== roleF) return false;
+    if (search && !u.name.toLowerCase().includes(search) && !u.email.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  const wrap = $('users-table-wrap');
+  if (!users.length) {
+    wrap.innerHTML = '<div class="empty-state"><div class="empty-icon">👥</div><p>Aucun utilisateur trouvé</p></div>';
+    return;
+  }
+  const canEdit = ['direction','manager','rh'].includes(currentUser.role);
+  wrap.innerHTML = `<table class="data-table">
+    <thead><tr><th>Nom</th><th>Email</th><th>Rôle</th><th>Téléphone</th><th>Statut</th>${canEdit?'<th>Actions</th>':''}</tr></thead>
+    <tbody>${users.map(u => `
+      <tr>
+        <td>${u.name}</td>
+        <td class="mono" style="font-size:.8rem">${u.email}</td>
+        <td><span class="badge badge-${u.role}">${fmtRole(u.role)}</span></td>
+        <td>${u.phone||'—'}</td>
+        <td>${u.active ? '<span style="color:var(--success)">● Actif</span>' : '<span style="color:var(--muted)">○ Inactif</span>'}</td>
+        ${canEdit ? `<td><button class="btn btn-sm ${u.active?'btn-danger':'btn-success'}" onclick="toggleUser(${u.id})">${u.active?'Désactiver':'Activer'}</button></td>` : ''}
+      </tr>
+    `).join('')}</tbody>
+  </table>`;
+}
+
+function openAddUser() { openModal('modal-user'); $('u-name').value=''; $('u-email').value=''; $('u-pass').value=''; $('u-phone').value=''; }
+
+async function saveUser() {
+  try {
+    await api('POST', '/users', { name:$('u-name').value, email:$('u-email').value, password:$('u-pass').value, role:$('u-role').value, phone:$('u-phone').value });
+    closeModal('modal-user');
+    notify('Utilisateur créé !');
+    state.users = await api('GET', '/users');
+    renderUsersTable();
+  } catch(e) { notify(e.message, 'error'); }
+}
+
+async function toggleUser(id) {
+  try {
+    await api('PATCH', `/users/${id}/toggle`);
+    state.users = await api('GET', '/users');
+    renderUsersTable();
+  } catch(e) { notify(e.message, 'error'); }
+}
+
+// ─── VEHICLES ──────────────────────────────────────────────────────
+function renderVehiclesGrid() {
+  const statusF = $('veh-status-filter')?.value||'';
+  let vehicles = statusF ? state.vehicles.filter(v => v.status === statusF) : state.vehicles;
+
+  const wrap = $('vehicles-grid');
+  const canEdit = ['direction','manager','flotte'].includes(currentUser.role);
+
+  const header = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div class="section-title" style="font-family:var(--font-head);font-size:1rem;font-weight:700">🚗 Parc véhicules (${vehicles.length})</div>
+    ${canEdit ? '<button class="btn btn-accent btn-sm" onclick="openModal(\'modal-vehicle\')">+ Ajouter</button>' : ''}
+  </div>`;
+
+  if (!vehicles.length) {
+    wrap.innerHTML = header + '<div class="empty-state"><div class="empty-icon">🚗</div><p>Aucun véhicule trouvé</p></div>';
+    return;
+  }
+
+  const expiryClass = (d) => {
+    if (!d) return '';
+    const days = (new Date(d) - new Date()) / 86400000;
+    if (days < 0) return 'danger';
+    if (days < 30) return 'warning';
+    return '';
+  };
+
+  wrap.innerHTML = header + `<div class="vehicle-grid">${vehicles.map(v => `
+    <div class="vehicle-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div class="vehicle-plate">${v.plate}</div>
+        ${badge(v.status)}
+      </div>
+      <div class="vehicle-info">${v.brand||''} ${v.model||''} · ${({camionnette:'Camionnette',fourgon:'Fourgon',poids_lourd:'Poids lourd'}[v.type]||v.type||'—')}</div>
+      <div class="vehicle-attrs">
+        <span style="font-size:.78rem;color:var(--muted)">🔢 ${v.mileage?.toLocaleString()||0} km</span>
+      </div>
+      <div class="vehicle-expiry">
+        <div class="expiry-item ${expiryClass(v.insurance_expiry)}">🛡 Assurance: ${fmt(v.insurance_expiry)}</div>
+        <div class="expiry-item ${expiryClass(v.ct_expiry)}">🔧 CT: ${fmt(v.ct_expiry)}</div>
+      </div>
+      ${canEdit ? `<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        <select class="form-group" onchange="updateVehicleStatus(${v.id}, this.value)" style="padding:5px 8px;font-size:.78rem;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-mono)">
+          <option value="" disabled selected>Changer statut...</option>
+          <option value="disponible">Disponible</option>
+          <option value="maintenance">Maintenance</option>
+          <option value="indisponible">Indisponible</option>
+        </select>
+      </div>` : ''}
+    </div>
+  `).join('')}</div>`;
+}
+
+async function updateVehicleStatus(id, status) {
+  if (!status) return;
+  try {
+    await api('PATCH', `/vehicles/${id}`, { status });
+    notify('Statut mis à jour');
+    state.vehicles = await api('GET', '/vehicles');
+    renderVehiclesGrid();
+  } catch(e) { notify(e.message, 'error'); }
+}
+
+async function saveVehicle() {
+  try {
+    await api('POST', '/vehicles', {
+      plate: $('v-plate').value.trim().toUpperCase(),
+      brand: $('v-brand').value,
+      model: $('v-model').value,
+      type: $('v-type').value,
+      insurance_expiry: $('v-insurance').value,
+      ct_expiry: $('v-ct').value,
+      mileage: parseInt($('v-km').value)||0
+    });
+    closeModal('modal-vehicle');
+    notify('Véhicule ajouté !');
+    state.vehicles = await api('GET', '/vehicles');
+    renderVehiclesGrid();
+  } catch(e) { notify(e.message, 'error'); }
+}
+
+// ─── TOURS ────────────────────────────────────────────────────────
+function renderToursTable() {
+  const wrap = $('tours-table-wrap');
+  if (!state.tours.length) {
+    wrap.innerHTML = '<div class="empty-state"><div class="empty-icon">🗺️</div><p>Aucune tournée</p></div>';
+    return;
+  }
+  wrap.innerHTML = `<table class="data-table">
+    <thead><tr><th>Nom</th><th>Client</th><th>Zone</th><th>Nb. arrêts</th><th>Description</th></tr></thead>
+    <tbody>${state.tours.map(t => `
+      <tr>
+        <td style="font-weight:500">${t.name}</td>
+        <td>${t.client||'—'}</td>
+        <td>${t.zone||'—'}</td>
+        <td style="text-align:center">${t.stops||0}</td>
+        <td style="font-size:.8rem;color:var(--muted)">${t.description||'—'}</td>
+      </tr>
+    `).join('')}</tbody>
+  </table>`;
+}
+
+async function saveTour() {
+  try {
+    await api('POST', '/tours', {
+      name: $('t-name').value,
+      client: $('t-client').value,
+      zone: $('t-zone').value,
+      stops: parseInt($('t-stops').value)||0,
+      description: $('t-desc').value
+    });
+    closeModal('modal-tour');
+    notify('Tournée créée !');
+    state.tours = await api('GET', '/tours');
+    renderToursTable();
+  } catch(e) { notify(e.message, 'error'); }
+}
+
+function openAddTour() {
+  ['t-name','t-client','t-zone','t-stops','t-desc'].forEach(id => { const el=$(id); if(el) el.value=''; });
+  openModal('modal-tour');
+}
+
+// ─── INCIDENTS ────────────────────────────────────────────────────
+function renderIncidents() {
+  const wrap = $('incidents-table-wrap');
+  if (!state.incidents.length) {
+    wrap.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><p>Aucun incident signalé</p></div>';
+    return;
+  }
+  const typeLabels = { vehicule:'Véhicule', livraison:'Livraison', accident:'Accident', retard:'Retard', autre:'Autre' };
+  wrap.innerHTML = `<table class="data-table">
+    <thead><tr><th>Date</th><th>Livreur</th><th>Type</th><th>Description</th></tr></thead>
+    <tbody>${state.incidents.map(i => `
+      <tr>
+        <td class="mono" style="font-size:.8rem">${new Date(i.created_at).toLocaleDateString('fr-FR')}</td>
+        <td>${i.driver_name||'—'}</td>
+        <td><span class="badge badge-termine">${typeLabels[i.type]||i.type}</span></td>
+        <td style="font-size:.85rem;max-width:300px">${i.description}</td>
+      </tr>
+    `).join('')}</tbody>
+  </table>`;
+}
+
+// ─── INIT DATE FILTER ──────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const df = $('plan-date-filter');
+  if (df) df.value = today();
+});
+</script>
+</body>
+</html>
